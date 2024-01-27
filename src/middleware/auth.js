@@ -3,9 +3,9 @@ const { JWT_SECRET } = require('../config');
 
 
 const getTokenFrom = (request) => {
-    const authorization = request.header('authorization');
-    if (authorization && authorization.toLowerCase().startsWith('bearer')){
-        return authorization.subString(7);
+    const authorization = request.get('authorization');
+    if (authorization && authorization.toLowerCase().startsWith('bearer ')){
+        return authorization.substring(7);
     }
     return null ;
 }
@@ -14,10 +14,13 @@ const verifyToken = (request,response,next) =>{
     if (!token) {
        return response.status(404).json({ message : "token missing "});
     } 
+    let decodedToken ;
+    try {
+         decodedToken = jwt.verify(token,JWT_SECRET);
+    } catch (error) {
+       return  response.status(400).json(error);
+    }   
 
-    let decodedToken = jwt.verify(token,JWT_SECRET);
-
-    request.userId = decodedToken.id ;
     next();
 }
 

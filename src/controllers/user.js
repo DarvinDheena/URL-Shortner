@@ -73,7 +73,7 @@ userRouter.get('/verification/:randomstring',async (request,response)=>{
     const user = await User.findOne({resetRandomString});
     user.status = true ;
     await user.save();
-    response.status(200).json({ message : "Account activated successfully"})
+    response.status(200).json({ message : "Account activated successfully & logon to URL Shortner App"})
 })
 
 // endpoint to login
@@ -101,6 +101,65 @@ userRouter.post('/login', async (request,response) => {
 
 // endpoint to forgotpassword and reset it
 
+userRouter.get('/forgot/:userName', async (request,response) => {
+    const userName = request.params.userName ;
+    const user =  await User.findOne({userName })
+    if (!user){
+        return response.status(404).json({ message : "Entered Username does not exist or incorrect" });
+    } 
+    // create a random string for verification
+    const randomString = Math.random().toString(36).substring(2,36);
+    // now create a nodeailer transporter
+    const transporter = nodemailer.createTransport({
+        service : "gmail",
+        auth : {
+            user : config.EMAIL_ADDRESS,
+            pass : config.EMAIL_PASSWORD 
+        }
+    })
+    // lets send the mail to user 
+    const sendMail = async () => {
+        const info = await transporter.sendMail({
+            from : `"Darvin Ganeshan" <${config.EMAIL_ADDRESS}>`,
+            to : userName,
+            subject : "Account Verification ",
+            text : `To reset your password use this code   "/${ randomString }"` 
+        })
+    }
+    sendMail()
+        .then( async ()=>{
+            user.resetRandomString = randomString ;
+            await user.save();
+            response.status(200).json({  message : "The forgot password link send to your registered email id"})
+        })
+})
+
+
+// lets verify the reset password string 
+
+userRouter.get('/forgot/verify/:randomString' , async (request,response) => {
+    const resetRandomString = request.params.randomString;
+    const user = await  User.findOne({resetRandomString});
+    if (!user){
+        return response.status(400).json({ message : "String does not match" });
+    }
+    response.status(200).json({ message : "string verified successfully" });
+    
+})
+// Endpoint to  reset the password
+userRouter.patch('/forgot/verify/:userName',async (request,response)=>{
+    const password = request.body.password;
+    const userName = request.params.userName;
+
+    // find user details and update the password
+    const user = await User.findOne({userName})
+    const salt = await bcrypt.genSalt();
+    user.password = await bcrypt.hash(password,salt);
+    await user.save()
+         .then(()=>{
+            response.status(200).json({ message:"password changed successfully" });
+         })
+})
 
 
 module.exports = userRouter ;
