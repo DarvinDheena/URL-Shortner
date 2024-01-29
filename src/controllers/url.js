@@ -1,8 +1,8 @@
 const urlRouter = require('express').Router();
 const verifyToken = require('../middleware/auth');
 const URL = require('../models/url')
-const User = require('../models/user');
 
+// endpoint to get all urls
 urlRouter.get('/all',async (request,response) => {
     await URL.find({})
         .then((data)=>{
@@ -13,6 +13,7 @@ urlRouter.get('/all',async (request,response) => {
         })
 })
 
+// endpoint to create a shortUrl
 urlRouter.post('/create', verifyToken , (request,response) => {
     const longURL = request.body.longURL ;
     const randomURL = Math.random().toString(36).substring(2,36);
@@ -30,6 +31,7 @@ urlRouter.post('/create', verifyToken , (request,response) => {
         })
 })
 
+// endpoint to view originelURL via shortend version
 urlRouter.get('/:shortURl',async (request,response)=>{
     const shortURL = request.params.shortURl
     await URL.findOne({ shortURL })
